@@ -8,7 +8,7 @@
   <style>
     :root{
       --bg: #f6f7fb;
-      --bg2: #ffffff;
+      --bg2: #f6f7fb;
       --text: #0f172a;
       --muted: #70648b;
       --border: #e2e8f0;
@@ -18,20 +18,20 @@
       --ring: #6f30b8;
     }
     @media (prefers-color-scheme: dark){
-      :root{ --bg:#2c2036; --bg2:#1e0f2a; --text:#f8fafc; --muted:#94a3b8; --border:#14091d; --shadow:none; --brand:#f8fafc; --ring:#6f30b8; }
+      :root{ --bg:#2f1b3f; --bg2:#1e0f2a; --text:#f8fafc; --muted:#94a3b8; --border:#14091d; --shadow:none; --brand:#fcf8fb; --ring:#541e92; }
       .shadow { box-shadow: none !important; }
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:linear-gradient(to bottom,var(--bg),#eef1f6 30%,var(--bg));font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--text)}
+    body{margin:0;background:linear-gradient(to bottom,var(--bg),#72558a 30%,var(--bg));font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--text)}
     .container{max-width:1120px;margin:0 auto;padding:16px}
     header.sticky{position:sticky;top:0;z-index:30;backdrop-filter:saturate(1.8) blur(8px);background:color-mix(in oklab, var(--bg2) 82%, transparent);border-bottom:1px solid var(--border)}
     .row{display:flex;gap:10px;align-items:center}
     .grow{flex:1 1 auto}
     .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border-radius:12px;padding:10px 14px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-shadow:var(--shadow);cursor:pointer;transition:transform .12s ease, filter .12s ease, box-shadow .2s ease}
-    .btn:hover{filter:brightness(0.98); box-shadow:0 12px 24px rgba(2,8,23,.08), 0 4px 12px rgba(2,8,23,.06)}
+    .btn:hover{filter:brightness(0.98); box-shadow:0 12px 24px rgba(2, 2, 2, 0.08), 0 4px 12px rgba(2,8,23,.06)}
     .btn:active{transform:translateY(1px) scale(.99)}
-    .btn.primary{background:var(--bg2); color:#fff; border-color:transparent}
+    .btn.primary{background:var(--bg2); color:#ffff; border-color:transparent}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:6px 10px}
     .input{border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:10px 12px; width:100%; color:var(--text); transition: box-shadow .15s ease, border-color .15s ease}
@@ -50,7 +50,6 @@
     .muted{color:var(--muted);font-size:12px}
     .actions{display:flex;gap:6px;opacity:0; transform:translateY(4px); transition:opacity .18s ease, transform .18s ease}
     .tile:hover .actions{opacity:1; transform:translateY(0)}
-    /* Lightbox (fixed sizing) */
     .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:2vh 2vw;z-index:60}
     .lightbox.open{display:flex;animation:fadeIn .18s ease}
     .lightbox-inner{position:relative;max-width:min(1400px, calc(100dvw - 4vw));max-height:min(92dvh, 92svh, 92vh);width:100%; animation:zoomIn .28s cubic-bezier(.22,1,.36,1)}
@@ -83,7 +82,35 @@
     .hidden{display:none}
     .range{accent-color:var(--ring)}
     .kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; border:1px solid var(--border); background:var(--bg2); padding:2px 6px; border-radius:6px}
-  </style>
+  
+  /* === Lightweight animated background (CSS-only) === */
+  /* Respects reduced-motion and keeps everything GPU-friendly (transform-only). */
+  body{ position:relative; overflow-x:hidden; }
+  body::before, body::after{
+    content:""; position:fixed; inset:-35%; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(55% 55% at 25% 30%, color-mix(in oklab, var(--ring) 26%, transparent), transparent 60%),
+      radial-gradient(50% 50% at 75% 65%, color-mix(in oklab, var(--brand) 18%, transparent), transparent 65%);
+    filter: blur(48px) saturate(1.15);
+    opacity:.45; transform: translate3d(0,0,0) scale(1.05);
+    animation: bg-drift 26s ease-in-out infinite;
+    will-change: transform;
+    mix-blend-mode: soft-light;
+  }
+  body::after{
+    animation-duration: 34s;
+    animation-direction: alternate-reverse;
+    opacity:.40;
+  }
+  @keyframes bg-drift{
+    0%   { transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1.04); }
+    50%  { transform: translate3d( 2%,  2%, 0) rotate(7deg)  scale(1.08); }
+    100% { transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1.04); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    body::before, body::after{ animation: none; }
+  }
+</style>
   <!-- Those Lucide icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <!-- JSZip + FileSaver -->
@@ -137,7 +164,7 @@
 
     <section id="content"></section>
 
-    <div class="note">Hey, this runs entirely in your browser. Images are kept locally, no worries :3</div>
+    <div class="note"><p style="color: rgba(255, 255, 255, 0.678);">Hey, this runs entirely in your browser. Images are kept locally, no worries :3</p></div>
   </main>
 
   <!-- Lightbox -->
