@@ -245,7 +245,7 @@
     view: "grid",
     viewer: { open:false, index:0 },
     isZipping: false,
-    seq: 0 // monotonically increasing insert order
+    seq: 0 
   };
 
   const content = $("#content");
@@ -270,20 +270,22 @@
   const lbPrev = $("#lb-prev");
   const lbNext = $("#lb-next");
 
+  state.tile = parseInt(density.value, 10) || state.tile;
+
   document.addEventListener('DOMContentLoaded', ()=> {
     if (window.lucide?.createIcons) lucide.createIcons();
     syncSearchUI();
   });
 
   function syncSearchUI(){
-    // keep the visible input in sync with state and show/hide the clear button
     if (search.value !== state.query) search.value = state.query;
     clearSearch.classList.toggle("hidden", state.query.length === 0);
-    // keep the sort select in sync, too (in case we change it programmatically)
     if (sortSel.value !== state.sortBy) sortSel.value = state.sortBy;
   }
 
   function addFiles(fileList){
+    state.tile = parseInt(density.value, 10) || state.tile;
+
     const images = Array.from(fileList).filter(f => f.type.startsWith("image/"));
     if (!images.length) return;
     const existingKey = new Set(state.items.map(p => p.name+"-"+p.size));
@@ -291,7 +293,7 @@
       const key = f.name+"-"+f.size;
       if (existingKey.has(key)) continue;
       const src = URL.createObjectURL(f);
-      state.seq += 1; // ensure strict ordering even within the same millisecond
+      state.seq += 1;
       state.items.push({
         id: Date.now()+"-"+Math.random().toString(36).slice(2),
         name: f.name,
@@ -309,12 +311,12 @@
     const q = state.query.trim().toLowerCase();
     let res = q ? state.items.filter(it => it.name.toLowerCase().includes(q)) : state.items.slice();
     switch(state.sortBy){
-      case "name-asc": res.sort((a,b)=>a.name.localeCompare(b.name)); break;
-      case "name-desc": res.sort((a,b)=>b.name.localeCompare(a.name)); break;
-      case "size": res.sort((a,b)=>b.size - a.size || a.name.localeCompare(b.name)); break;
-      case "oldest": res.sort((a,b)=> (b.seq - a.seq) || a.name.localeCompare(b.name)); break;
+      case "name-asc":  res.sort((a,b)=> a.name.localeCompare(b.name)); break;
+      case "name-desc": res.sort((a,b)=> b.name.localeCompare(a.name)); break;
+      case "size":      res.sort((a,b)=> b.size - a.size || a.name.localeCompare(b.name)); break;
+      case "oldest":    res.sort((a,b)=> (a.seq - b.seq) || a.name.localeCompare(b.name)); break; 
       case "newest":
-      default: res.sort((a,b)=> (a.seq - b.seq) || a.name.localeCompare(b.name));
+      default:          res.sort((a,b)=> (b.seq - a.seq) || a.name.localeCompare(b.name)); break; 
     }
     return res;
   }
@@ -513,7 +515,7 @@
   drop.addEventListener("drop", dropAdd);
   drop.addEventListener("click", ()=> fileInput.click());
 
-  // SEARCH —— keep UI and state tightly in sync
+  // SEARCH 
   search.addEventListener("input", debounce(()=>{
     state.query = search.value;
     syncSearchUI();
@@ -526,14 +528,17 @@
     search.focus();
   });
 
-  density.addEventListener("input", debounce(()=>{ state.tile = parseInt(density.value,10)||220; render(); }, 60));
+  density.addEventListener("input", debounce(()=>{
+    state.tile = parseInt(density.value,10) || 220;
+    render();
+  }, 60));
   sortSel.addEventListener("change", ()=>{ state.sortBy = sortSel.value; render(); });
   gridBtn.addEventListener("click", ()=>{ state.view="grid"; render(); });
   listBtn.addEventListener("click", ()=>{ state.view="list"; render(); });
   clearBtn.addEventListener("click", clearAll);
   zipBtn.addEventListener("click", exportZip);
 
-  // Delegated actions inside the gallery
+  // the actions inside the gallery
   content.addEventListener("click", (e)=>{
     const actionEl = e.target.closest("[data-action]");
     if (!actionEl) return;
@@ -566,20 +571,6 @@
     }
     render();
     if (state.viewer.open) updateViewer();
-  });
-
-  // Keyboard navigation
-  window.addEventListener("keydown", (e)=>{
-    if (!state.viewer.open) return;
-    const tag = document.activeElement?.tagName?.toLowerCase();
-    if (tag === "input" || tag === "textarea") return;
-    if (e.key === "Escape") { e.preventDefault(); return closeViewer(); }
-    if (e.key === "ArrowRight" || e.key.toLowerCase() === "d"){
-      const f=getFiltered(); state.viewer.index=(state.viewer.index+1)%f.length; updateViewer(); e.preventDefault();
-    }
-    if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a"){
-      const f=getFiltered(); state.viewer.index=(state.viewer.index-1+f.length)%f.length; updateViewer(); e.preventDefault();
-    }
   });
 
   render();
