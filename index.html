@@ -6,7 +6,6 @@
   <title>Image Viewer — By Liam</title>
   <meta name="color-scheme" content="light dark">
 
-  <!-- Networking hints (helps first paint on CDNs) -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="dns-prefetch" href="//unpkg.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -62,13 +61,19 @@
     .tile{
       position:relative; overflow:hidden; border-radius:12px; border:1px solid var(--border);
       background:var(--bg2); box-shadow:var(--shadow); transform:translateY(8px) scale(.98); opacity:0;
-      content-visibility:auto; contain-intrinsic-size: 260px 220px; /* helps large lists */
+      content-visibility:auto; contain-intrinsic-size: 260px 220px;
     }
     .tile.reveal{animation:tileIn .5s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(var(--i, 0) * 20ms)}
-    .thumb{width:100%;height:0;padding-bottom:75%;display:block;overflow:hidden}
+    .thumb{
+      width:100%;height:0;padding-bottom:75%;display:block;overflow:hidden;
+      position:relative; /* constrain absolutely-positioned img to the thumb box */
+    }
     .thumb>img{
-      width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;
+      width:100%;height:100%;
+      object-fit:contain;             /* << contain so art stays inside the box */
+      display:block;position:absolute;inset:0;
       transform:scale(1.0); transition:transform .28s ease; will-change: transform;
+      background:transparent;
     }
     .tile:hover .thumb>img{transform:scale(1.03)}
     .tile-footer{display:flex;justify-content:space-between;align-items:center;padding:10px}
@@ -79,9 +84,24 @@
     .tile:hover .actions{opacity:1; transform:translateY(0)}
     .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:2vh 2vw;z-index:60}
     .lightbox.open{display:flex;animation:fadeIn .18s ease}
-    .lightbox-inner{position:relative;max-width:min(1400px, calc(100dvw - 4vw));max-height:min(92dvh, 92svh, 92vh);width:100%; animation:zoomIn .28s cubic-bezier(.22,1,.36,1)}
-    .lightbox img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:16px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-    .lb-top{position:absolute;left:12px;right:12px;top:8px;display:flex;justify-content:space-between;align-items:center;color:#fff;gap:8px}
+    /* fixed-size stage for consistent full-view size */
+    .lightbox-inner{
+      position:relative;
+      width:min(1200px, 90vw);
+      height:min(84vh, 84svh);
+      animation:zoomIn .28s cubic-bezier(.22,1,.36,1);
+    }
+    .lightbox img{
+      width:100%;height:100%;
+      object-fit:contain;
+      border-radius:16px;
+      background:transparent;          /* << keep PNG transparency */
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+    }
+    .lb-top{
+      position:absolute;left:12px;right:12px;top:8px;display:flex;justify-content:space-between;align-items:center;color:#fff;gap:8px;
+      z-index:2;
+    }
     .lb-btn{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:6px 10px;backdrop-filter:saturate(1.2) blur(2px); transition: transform .12s ease}
     .lb-btn:active{transform:scale(.98)}
     .nav{position:absolute;inset-block:0;display:flex;align-items:center;color:#fff}
@@ -114,9 +134,7 @@
     .kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; border:1px solid var(--border); background:var(--bg2); padding:2px 6px; border-radius:6px}
   </style>
 
-  <!-- Lucide icons (deferred) -->
   <script src="https://unpkg.com/lucide@latest" defer></script>
-  <!-- JSZip + FileSaver (deferred) -->
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
 </head>
@@ -170,7 +188,7 @@
     <div class="note"><p style="color: rgba(255, 255, 255, 0.678);">Hey, this runs entirely in your browser. Images are kept locally, no worries :3</p></div>
   </main>
 
-  <!-- Lightbox Stuff -->
+  <!-- Lightbox -->
   <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
     <div class="lightbox-inner">
       <img id="lb-img" alt="Preview" decoding="async" fetchpriority="low">
@@ -178,22 +196,20 @@
         <div id="lb-title" class="muted" style="font-size:13px"></div>
         <div class="row">
           <a id="lb-save" class="lb-btn" download><span style="vertical-align:middle">Save</span></a>
-          <button id="lb-remove" class="lb-btn">Remove</button>
-          <button id="lb-close" class="lb-btn">Close</button>
+          <button id="lb-remove" class="lb-btn" type="button">Remove</button>
+          <button id="lb-close" class="lb-btn" type="button">Close</button>
         </div>
       </div>
-      <div class="nav left"><button id="lb-prev" title="Previous"><i data-lucide="chevron-left"></i></button></div>
-      <div class="nav right"><button id="lb-next" title="Next"><i data-lucide="chevron-right"></i></button></div>
+      <div class="nav left"><button id="lb-prev" title="Previous" type="button"><i data-lucide="chevron-left"></i></button></div>
+      <div class="nav right"><button id="lb-next" title="Next" type="button"><i data-lucide="chevron-right"></i></button></div>
     </div>
   </div>
 
 <script defer>
 (function(){
-  // ---- Helpers ---- //
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
   const svg = (name, attrs={}) => {
-    // Inline SVGs for dynamic content — avoids calling lucide.createIcons repeatedly
     try{
       return lucide?.icons?.[name]?.toSvg
         ? lucide.icons[name].toSvg({width:16, height:16, ...attrs})
@@ -207,11 +223,8 @@
     do { num /= 1024; i++; } while (num >= 1024 && i < units.length-1);
     return (num >= 100 ? num.toFixed(0) : num >= 10 ? num.toFixed(1) : num.toFixed(2)) + " " + units[i];
   };
-  const debounce = (fn, ms=120) => {
-    let t; return(...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); };
-  };
+  const debounce = (fn, ms=120) => { let t; return(...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
-  // ---- State ---- //
   const state = {
     items: [],
     query: "",
@@ -222,7 +235,6 @@
     isZipping: false
   };
 
-  // ---- Elements ---- //
   const content = $("#content");
   const search = $("#search");
   const clearSearch = $("#clearSearch");
@@ -245,12 +257,10 @@
   const lbPrev = $("#lb-prev");
   const lbNext = $("#lb-next");
 
-  // Turn static <i data-lucide> into svgs once
   document.addEventListener('DOMContentLoaded', ()=> {
     if (window.lucide?.createIcons) lucide.createIcons();
   });
 
-  // ---- Data ops ---- //
   function addFiles(fileList){
     const now = Date.now();
     const images = Array.from(fileList).filter(f => f.type.startsWith("image/"));
@@ -278,7 +288,6 @@
     return res;
   }
 
-  // ---- IntersectionObserver (single instance) ---- //
   const io = new IntersectionObserver(entries => {
     for (const e of entries){
       if (e.isIntersecting){
@@ -288,18 +297,19 @@
     }
   },{ rootMargin: "80px 0px 120px 0px", threshold: 0.01 });
 
-  // ---- Render ---- //
   function render(){
     const filtered = getFiltered();
     zipBtn.disabled = filtered.length === 0 || state.isZipping;
     clearBtn.disabled = state.items.length === 0;
     drop.classList.toggle("hidden", state.items.length !== 0);
 
-    content.innerHTML = ""; // full redraw (kept simple, but cheaper now)
+    content.innerHTML = "";
+
     if (state.view === "grid"){
       const grid = document.createElement("div");
       grid.className = "grid";
       grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${state.tile}px, 1fr))`;
+      content.appendChild(grid);
 
       filtered.forEach((it, idx) => {
         const card = document.createElement("div");
@@ -321,10 +331,8 @@
             </div>
           </div>
         `;
-        content.appendChild(grid);
         grid.appendChild(card);
-        // Observe after append for reveal
-        requestIdleCallback?.(()=>io.observe(card)) || io.observe(card);
+        io.observe(card);
       });
     } else {
       const box = document.createElement("div");
@@ -356,10 +364,9 @@
           </div>
         `;
         box.appendChild(row);
-        requestIdleCallback?.(()=>io.observe(row)) || io.observe(row);
+        io.observe(row);
       });
       content.appendChild(box);
-      // simple staged reveal
       requestAnimationFrame(()=>{
         $$(".list .row", content).forEach((el, i)=>{
           el.style.setProperty("--i", i);
@@ -399,7 +406,7 @@
     state.viewer.index = filteredIndex;
     updateViewer();
     lightbox.classList.add("open");
-    document.documentElement.style.overflow = "hidden"; // prevent background scroll
+    document.documentElement.style.overflow = "hidden";
   }
   function closeViewer(){
     state.viewer.open = false;
@@ -441,7 +448,6 @@
         const blob = await res.blob();
         zip.file(uniq(it.name || "image"), blob);
       }
-      // Images are already compressed; STORE saves CPU and UI jank
       const out = await zip.generateAsync({type:"blob", compression:"STORE"});
       const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
       saveAs(out, "images-"+stamp+".zip");
@@ -455,12 +461,10 @@
     }
   }
 
-  // spinner style for inline SVG
   const style = document.createElement("style");
   style.textContent = ".spin{display:inline-block;vertical-align:middle;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}";
   document.head.appendChild(style);
 
-  // ---- Event wiring ---- //
   uploadBtn.addEventListener("click", ()=> fileInput.click());
   fileInput.addEventListener("change", (e)=> addFiles(e.target.files));
 
@@ -475,7 +479,6 @@
   drop.addEventListener("drop", dropAdd);
   drop.addEventListener("click", ()=> fileInput.click());
 
-  // Debounced inputs
   search.addEventListener("input", debounce(()=>{ state.query = search.value; render(); }, 120));
   clearSearch.addEventListener("click", ()=>{ search.value=""; state.query=""; render(); });
   density.addEventListener("input", debounce(()=>{ state.tile = parseInt(density.value,10)||220; render(); }, 60));
@@ -485,7 +488,7 @@
   clearBtn.addEventListener("click", clearAll);
   zipBtn.addEventListener("click", exportZip);
 
-  // Single delegated listener for all content actions
+  // Delegated actions inside the gallery
   content.addEventListener("click", (e)=>{
     const actionEl = e.target.closest("[data-action]");
     if (!actionEl) return;
@@ -497,10 +500,13 @@
   });
 
   // Lightbox controls
-  lbClose.addEventListener("click", closeViewer);
+  lbClose.addEventListener("click", (e)=>{ e.preventDefault(); e.stopPropagation(); closeViewer(); });
   lbPrev.addEventListener("click", ()=>{ const f=getFiltered(); state.viewer.index = (state.viewer.index-1+f.length)%f.length; updateViewer(); });
   lbNext.addEventListener("click", ()=>{ const f=getFiltered(); state.viewer.index = (state.viewer.index+1)%f.length; updateViewer(); });
-  lightbox.addEventListener("click", (e)=>{ if (e.target === lightbox) closeViewer(); });
+  lightbox.addEventListener("click", (e)=>{
+    if (e.target === lightbox) closeViewer();
+    if (e.target.closest && e.target.closest("#lb-close")) closeViewer();
+  });
   lbRemove.addEventListener("click", ()=>{
     const f=getFiltered();
     const current = f[state.viewer.index];
@@ -517,7 +523,7 @@
     if (state.viewer.open) updateViewer();
   });
 
-  // Keyboard navigation: Esc, arrows, and A/D
+  // Keyboard navigation
   window.addEventListener("keydown", (e)=>{
     if (!state.viewer.open) return;
     const tag = document.activeElement?.tagName?.toLowerCase();
@@ -531,7 +537,6 @@
     }
   });
 
-  // Initial paint
   render();
 })();
 </script>
