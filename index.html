@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Image Viewer — By Liam</title>
   <meta name="color-scheme" content="light dark">
+
+  <!-- Networking hints (helps first paint on CDNs) -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="dns-prefetch" href="//unpkg.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+
   <style>
     :root{
       --bg: #f6f7fb;
@@ -21,17 +28,30 @@
       :root{ --bg:#2f1b3f; --bg2:#1e0f2a; --text:#f8fafc; --muted:#94a3b8; --border:#14091d; --shadow:none; --brand:#fcf8fb; --ring:#541e92; }
       .shadow { box-shadow: none !important; }
     }
+    @media (prefers-reduced-motion: reduce){
+      *{animation: none !important; transition: none !important}
+    }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:linear-gradient(to bottom,var(--bg),#72558a 30%,var(--bg));font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--text)}
+    body{
+      margin:0;
+      background:linear-gradient(to bottom,var(--bg),#72558a 30%,var(--bg));
+      font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--text)
+    }
     .container{max-width:1120px;margin:0 auto;padding:16px}
-    header.sticky{position:sticky;top:0;z-index:30;backdrop-filter:saturate(1.8) blur(8px);background:color-mix(in oklab, var(--bg2) 82%, transparent);border-bottom:1px solid var(--border)}
+    header.sticky{
+      position:sticky;top:0;z-index:30;
+      backdrop-filter:saturate(1.4) blur(6px);
+      background:color-mix(in oklab, var(--bg2) 86%, transparent);
+      border-bottom:1px solid var(--border)
+    }
     .row{display:flex;gap:10px;align-items:center}
     .grow{flex:1 1 auto}
     .btn{display:inline-flex;gap:8px;align-items:center;justify-content:center;border-radius:12px;padding:10px 14px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-shadow:var(--shadow);cursor:pointer;transition:transform .12s ease, filter .12s ease, box-shadow .2s ease}
     .btn:hover{filter:brightness(0.98); box-shadow:0 12px 24px rgba(2, 2, 2, 0.08), 0 4px 12px rgba(2,8,23,.06)}
     .btn:active{transform:translateY(1px) scale(.99)}
-    .btn.primary{background:var(--bg2); color:#ffff; border-color:transparent}
+    .btn.primary{background:var(--bg2); color:#fff; border-color:transparent}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:6px 10px}
     .input{border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:10px 12px; width:100%; color:var(--text); transition: box-shadow .15s ease, border-color .15s ease}
@@ -39,10 +59,17 @@
     .toolbar{gap:10px}
     .select{appearance:none}
     .grid{display:grid; gap:16px}
-    .tile{position:relative; overflow:hidden; border-radius:12px; border:1px solid var(--border); background:var(--bg2); box-shadow:var(--shadow); transform:translateY(8px) scale(.98); opacity:0}
+    .tile{
+      position:relative; overflow:hidden; border-radius:12px; border:1px solid var(--border);
+      background:var(--bg2); box-shadow:var(--shadow); transform:translateY(8px) scale(.98); opacity:0;
+      content-visibility:auto; contain-intrinsic-size: 260px 220px; /* helps large lists */
+    }
     .tile.reveal{animation:tileIn .5s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(var(--i, 0) * 20ms)}
     .thumb{width:100%;height:0;padding-bottom:75%;display:block;overflow:hidden}
-    .thumb>img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;transform:scale(1.0); transition:transform .28s ease}
+    .thumb>img{
+      width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;
+      transform:scale(1.0); transition:transform .28s ease; will-change: transform;
+    }
     .tile:hover .thumb>img{transform:scale(1.03)}
     .tile-footer{display:flex;justify-content:space-between;align-items:center;padding:10px}
     .meta{min-width:0}
@@ -66,7 +93,10 @@
     .list{border-radius:14px;overflow:hidden;border:1px solid var(--border);background:var(--bg2)}
     .list .head,.list .row{display:grid;grid-template-columns:6fr 2fr 2fr 2fr;align-items:center}
     .list .head{padding:10px 14px;border-bottom:1px solid var(--border); color:var(--muted); font-size:12px; font-weight:600}
-    .list .row{padding:10px 14px;border-bottom:1px solid color-mix(in oklab, var(--border) 70%, transparent); opacity:0; transform:translateY(6px)}
+    .list .row{
+      padding:10px 14px;border-bottom:1px solid color-mix(in oklab, var(--border) 70%, transparent); opacity:0; transform:translateY(6px);
+      content-visibility:auto; contain-intrinsic-size: 72px 54px;
+    }
     .list .row.reveal{animation:rowIn .4s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(var(--i, 0) * 18ms)}
     .list .row:last-child{border-bottom:0}
     .preview{width:72px;height:54px;border-radius:10px;border:1px solid var(--border);overflow:hidden; background:#f1f5f9; flex-shrink:0}
@@ -83,11 +113,12 @@
     .range{accent-color:var(--ring)}
     .kbd{font:12px ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; border:1px solid var(--border); background:var(--bg2); padding:2px 6px; border-radius:6px}
   </style>
-  <!-- Those Lucide icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- JSZip + FileSaver -->
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <!-- Lucide icons (deferred) -->
+  <script src="https://unpkg.com/lucide@latest" defer></script>
+  <!-- JSZip + FileSaver (deferred) -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" defer></script>
 </head>
 <body>
   <header class="sticky">
@@ -131,7 +162,7 @@
       <div><i data-lucide="upload"></i></div>
       <div style="font-weight:600;margin-top:6px">Drag & drop images here</div>
       <div class="muted">or click to browse your files</div>
-      <div class="muted" style="margin-top:8px">Hint: press <span class="kbd">A</span>/<span class="kbd">D</span></div> to switch between images
+      <div class="muted" style="margin-top:8px">Hint: press <span class="kbd">A</span>/<span class="kbd">D</span> to switch between images</div>
     </div>
 
     <section id="content"></section>
@@ -139,10 +170,10 @@
     <div class="note"><p style="color: rgba(255, 255, 255, 0.678);">Hey, this runs entirely in your browser. Images are kept locally, no worries :3</p></div>
   </main>
 
-  <!-- Lightbox -->
+  <!-- Lightbox Stuff -->
   <div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
     <div class="lightbox-inner">
-      <img id="lb-img" alt="Preview">
+      <img id="lb-img" alt="Preview" decoding="async" fetchpriority="low">
       <div class="lb-top">
         <div id="lb-title" class="muted" style="font-size:13px"></div>
         <div class="row">
@@ -156,11 +187,31 @@
     </div>
   </div>
 
-<script>
+<script defer>
 (function(){
-  lucide.createIcons();
+  // ---- Helpers ---- //
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const svg = (name, attrs={}) => {
+    // Inline SVGs for dynamic content — avoids calling lucide.createIcons repeatedly
+    try{
+      return lucide?.icons?.[name]?.toSvg
+        ? lucide.icons[name].toSvg({width:16, height:16, ...attrs})
+        : '';
+    }catch{ return ''; }
+  };
+  const bytesToNice = (num) => {
+    if (num < 1024) return num + " B";
+    const units = ["KB","MB","GB"];
+    let i=-1;
+    do { num /= 1024; i++; } while (num >= 1024 && i < units.length-1);
+    return (num >= 100 ? num.toFixed(0) : num >= 10 ? num.toFixed(1) : num.toFixed(2)) + " " + units[i];
+  };
+  const debounce = (fn, ms=120) => {
+    let t; return(...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); };
+  };
 
-  // ---- State ----
+  // ---- State ---- //
   const state = {
     items: [],
     query: "",
@@ -171,8 +222,7 @@
     isZipping: false
   };
 
-  // ---- Elements ----
-  const $ = (sel) => document.querySelector(sel);
+  // ---- Elements ---- //
   const content = $("#content");
   const search = $("#search");
   const clearSearch = $("#clearSearch");
@@ -195,15 +245,12 @@
   const lbPrev = $("#lb-prev");
   const lbNext = $("#lb-next");
 
-  // ---- Utilities ----
-  const bytesToNice = (num) => {
-    if (num < 1024) return num + " B";
-    const units = ["KB","MB","GB"];
-    let i=-1;
-    do { num /= 1024; i++; } while (num >= 1024 && i < units.length-1);
-    return (num >= 100 ? num.toFixed(0) : num >= 10 ? num.toFixed(1) : num.toFixed(2)) + " " + units[i];
-  };
+  // Turn static <i data-lucide> into svgs once
+  document.addEventListener('DOMContentLoaded', ()=> {
+    if (window.lucide?.createIcons) lucide.createIcons();
+  });
 
+  // ---- Data ops ---- //
   function addFiles(fileList){
     const now = Date.now();
     const images = Array.from(fileList).filter(f => f.type.startsWith("image/"));
@@ -217,7 +264,6 @@
     }
     render();
   }
-
   function getFiltered(){
     const q = state.query.trim().toLowerCase();
     let res = q ? state.items.filter(it => it.name.toLowerCase().includes(q)) : state.items.slice();
@@ -232,38 +278,36 @@
     return res;
   }
 
-  // reveal animations
-  let gridObserver = null;
-  function setupObserver(){
-    if (gridObserver) gridObserver.disconnect();
-    gridObserver = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting){
-          e.target.classList.add("reveal");
-          gridObserver.unobserve(e.target);
-        }
-      });
-    },{ rootMargin: "80px" });
-  }
+  // ---- IntersectionObserver (single instance) ---- //
+  const io = new IntersectionObserver(entries => {
+    for (const e of entries){
+      if (e.isIntersecting){
+        e.target.classList.add("reveal");
+        io.unobserve(e.target);
+      }
+    }
+  },{ rootMargin: "80px 0px 120px 0px", threshold: 0.01 });
 
+  // ---- Render ---- //
   function render(){
     const filtered = getFiltered();
     zipBtn.disabled = filtered.length === 0 || state.isZipping;
     clearBtn.disabled = state.items.length === 0;
+    drop.classList.toggle("hidden", state.items.length !== 0);
 
-    if (state.items.length === 0){ drop.classList.remove("hidden"); } else { drop.classList.add("hidden"); }
-
+    content.innerHTML = ""; // full redraw (kept simple, but cheaper now)
     if (state.view === "grid"){
       const grid = document.createElement("div");
       grid.className = "grid";
       grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(${state.tile}px, 1fr))`;
+
       filtered.forEach((it, idx) => {
         const card = document.createElement("div");
         card.className = "tile";
         card.style.setProperty("--i", idx);
         card.innerHTML = `
-          <button class="thumb" data-idx="${idx}" aria-label="Open ${it.name}">
-            <img src="${it.src}" alt="${it.name}" loading="lazy">
+          <button class="thumb" data-action="view" data-idx="${idx}" aria-label="Open ${it.name}">
+            <img src="${it.src}" alt="${it.name}" loading="lazy" decoding="async" fetchpriority="low">
           </button>
           <div class="tile-footer">
             <div class="meta">
@@ -271,29 +315,17 @@
               <div class="muted">${bytesToNice(it.size)}</div>
             </div>
             <div class="actions">
-              <button class="icon-btn view" data-idx="${idx}"><i data-lucide="eye"></i><span class="muted" style="color:inherit">View</span></button>
-              <a class="icon-btn" href="${it.src}" download="${it.name}"><i data-lucide="download"></i><span class="muted" style="color:inherit">Save</span></a>
-              <button class="icon-btn remove" data-idx="${idx}"><i data-lucide="trash-2"></i><span class="muted" style="color:inherit">Remove</span></button>
+              <button class="icon-btn" data-action="view" data-idx="${idx}">${svg('eye')}<span class="muted" style="color:inherit">View</span></button>
+              <a class="icon-btn" href="${it.src}" download="${it.name}">${svg('download')}<span class="muted" style="color:inherit">Save</span></a>
+              <button class="icon-btn" data-action="remove" data-idx="${idx}">${svg('trash-2')}<span class="muted" style="color:inherit">Remove</span></button>
             </div>
           </div>
         `;
+        content.appendChild(grid);
         grid.appendChild(card);
+        // Observe after append for reveal
+        requestIdleCallback?.(()=>io.observe(card)) || io.observe(card);
       });
-      content.innerHTML = "";
-      content.appendChild(grid);
-      lucide.createIcons({attrs:{}});
-
-      setupObserver();
-      content.querySelectorAll(".tile").forEach((el) => gridObserver.observe(el));
-
-      content.querySelectorAll(".thumb, .view").forEach(btn => btn.addEventListener("click", (e)=>{
-        const i = parseInt(e.currentTarget.getAttribute("data-idx"),10);
-        openViewer(i);
-      }));
-      content.querySelectorAll(".remove").forEach(btn => btn.addEventListener("click",(e)=>{
-        const i = parseInt(e.currentTarget.getAttribute("data-idx"),10);
-        removeAt(i, filtered);
-      }));
     } else {
       const box = document.createElement("div");
       box.className = "list";
@@ -307,7 +339,9 @@
         row.style.setProperty("--i", idx);
         row.innerHTML = `
           <div class="row" style="gap:12px">
-            <button class="preview" data-idx="${idx}"><img src="${it.src}" alt="${it.name}"></button>
+            <button class="preview" data-action="view" data-idx="${idx}">
+              <img src="${it.src}" alt="${it.name}" loading="lazy" decoding="async" fetchpriority="low">
+            </button>
             <div>
               <div class="name" title="${it.name}">${it.name}</div>
               <div class="muted">${it.type}</div>
@@ -316,34 +350,27 @@
           <div>${bytesToNice(it.size)}</div>
           <div>${new Date(it.addedAt).toLocaleString()}</div>
           <div style="text-align:right">
-            <button class="icon-btn view" data-idx="${idx}"><i data-lucide="eye"></i> View</button>
-            <a class="icon-btn" href="${it.src}" download="${it.name}"><i data-lucide="download"></i> Save</a>
-            <button class="icon-btn remove" data-idx="${idx}"><i data-lucide="trash-2"></i> Remove</button>
+            <button class="icon-btn" data-action="view" data-idx="${idx}">${svg('eye')}<span>View</span></button>
+            <a class="icon-btn" href="${it.src}" download="${it.name}">${svg('download')}<span>Save</span></a>
+            <button class="icon-btn" data-action="remove" data-idx="${idx}">${svg('trash-2')}<span>Remove</span></button>
           </div>
         `;
         box.appendChild(row);
+        requestIdleCallback?.(()=>io.observe(row)) || io.observe(row);
       });
-      content.innerHTML = "";
       content.appendChild(box);
-      lucide.createIcons();
+      // simple staged reveal
       requestAnimationFrame(()=>{
-        content.querySelectorAll(".list .row").forEach((el, i)=>{
+        $$(".list .row", content).forEach((el, i)=>{
           el.style.setProperty("--i", i);
           el.classList.add("reveal");
         });
       });
-      content.querySelectorAll(".preview, .view").forEach(btn => btn.addEventListener("click", (e)=>{
-        const i = parseInt(e.currentTarget.getAttribute("data-idx"),10);
-        openViewer(i);
-      }));
-      content.querySelectorAll(".remove").forEach(btn => btn.addEventListener("click",(e)=>{
-        const i = parseInt(e.currentTarget.getAttribute("data-idx"),10);
-        removeAt(i, filtered);
-      }));
     }
   }
 
-  function removeAt(filteredIndex, filtered){
+  function removeAt(filteredIndex){
+    const filtered = getFiltered();
     const target = filtered[filteredIndex];
     if (!target) return;
     const idx = state.items.findIndex(it => it.id === target.id);
@@ -358,7 +385,6 @@
     }
     render();
   }
-
   function clearAll(){
     state.items.forEach(it => URL.revokeObjectURL(it.src));
     state.items = [];
@@ -397,23 +423,26 @@
     state.isZipping = true;
     zipBtn.disabled = true;
     const prev = zipBtn.innerHTML;
-    zipBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" style="vertical-align:middle; margin-right:6px; animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" opacity=".25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none"></path></svg> Creating ZIP…';
-    const zip = new JSZip();
+    zipBtn.innerHTML = `${svg('loader-2',{class:'spin'})} Creating ZIP…`;
+
     const nameMap = new Map();
     const uniq = (name) => {
-      if (!nameMap.has(name)) { nameMap.set(name,1); return name; }
+      if (!nameMap.has(name)) { nameMap.set(name,1); return name || "image"; }
       const idx = nameMap.get(name); nameMap.set(name, idx+1);
       const dot = name.lastIndexOf(".");
       if (dot === -1) return name + " ("+idx+")";
       return name.slice(0,dot) + " ("+idx+")" + name.slice(dot);
     };
+
     try{
+      const zip = new JSZip();
       for (const it of filtered){
         const res = await fetch(it.src);
         const blob = await res.blob();
         zip.file(uniq(it.name || "image"), blob);
       }
-      const out = await zip.generateAsync({type:"blob"});
+      // Images are already compressed; STORE saves CPU and UI jank
+      const out = await zip.generateAsync({type:"blob", compression:"STORE"});
       const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,"-");
       saveAs(out, "images-"+stamp+".zip");
     }catch(err){
@@ -421,15 +450,17 @@
       console.error(err);
     }finally{
       state.isZipping = false;
-      zipBtn.innerHTML = '<i data-lucide="archive"></i> Export ZIP';
-      lucide.createIcons();
-      render();
+      zipBtn.innerHTML = `${svg('archive')} Export ZIP`;
+      zipBtn.disabled = getFiltered().length === 0;
     }
   }
+
+  // spinner style for inline SVG
   const style = document.createElement("style");
-  style.textContent = "@keyframes spin{to{transform:rotate(360deg)}}";
+  style.textContent = ".spin{display:inline-block;vertical-align:middle;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}";
   document.head.appendChild(style);
 
+  // ---- Event wiring ---- //
   uploadBtn.addEventListener("click", ()=> fileInput.click());
   fileInput.addEventListener("change", (e)=> addFiles(e.target.files));
 
@@ -439,20 +470,33 @@
     if (files && files.length) addFiles(files);
     drop.classList.remove("highlight");
   }
-  ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, (e)=>{ e.preventDefault(); drop.classList.add("highlight"); }));
-  ["dragleave","dragend","drop"].forEach(ev => drop.addEventListener(ev, (e)=>{ drop.classList.remove("highlight"); }));
+  ["dragover","dragenter"].forEach(ev => drop.addEventListener(ev, (e)=>{ e.preventDefault(); drop.classList.add("highlight"); }, {passive:false}));
+  ["dragleave","dragend","drop"].forEach(ev => drop.addEventListener(ev, (e)=>{ drop.classList.remove("highlight"); }, {passive:true}));
   drop.addEventListener("drop", dropAdd);
   drop.addEventListener("click", ()=> fileInput.click());
 
-  search.addEventListener("input", ()=>{ state.query = search.value; render(); });
+  // Debounced inputs
+  search.addEventListener("input", debounce(()=>{ state.query = search.value; render(); }, 120));
   clearSearch.addEventListener("click", ()=>{ search.value=""; state.query=""; render(); });
-  density.addEventListener("input", ()=>{ state.tile = parseInt(density.value,10); render(); });
+  density.addEventListener("input", debounce(()=>{ state.tile = parseInt(density.value,10)||220; render(); }, 60));
   sortSel.addEventListener("change", ()=>{ state.sortBy = sortSel.value; render(); });
   gridBtn.addEventListener("click", ()=>{ state.view="grid"; render(); });
   listBtn.addEventListener("click", ()=>{ state.view="list"; render(); });
   clearBtn.addEventListener("click", clearAll);
   zipBtn.addEventListener("click", exportZip);
 
+  // Single delegated listener for all content actions
+  content.addEventListener("click", (e)=>{
+    const actionEl = e.target.closest("[data-action]");
+    if (!actionEl) return;
+    const idx = parseInt(actionEl.getAttribute("data-idx"),10);
+    const action = actionEl.getAttribute("data-action");
+    if (Number.isNaN(idx)) return;
+    if (action === "view") openViewer(idx);
+    else if (action === "remove") removeAt(idx);
+  });
+
+  // Lightbox controls
   lbClose.addEventListener("click", closeViewer);
   lbPrev.addEventListener("click", ()=>{ const f=getFiltered(); state.viewer.index = (state.viewer.index-1+f.length)%f.length; updateViewer(); });
   lbNext.addEventListener("click", ()=>{ const f=getFiltered(); state.viewer.index = (state.viewer.index+1)%f.length; updateViewer(); });
@@ -473,7 +517,7 @@
     if (state.viewer.open) updateViewer();
   });
 
-  // keyboard nav: Esc, arrows, and A/D
+  // Keyboard navigation: Esc, arrows, and A/D
   window.addEventListener("keydown", (e)=>{
     if (!state.viewer.open) return;
     const tag = document.activeElement?.tagName?.toLowerCase();
@@ -487,7 +531,9 @@
     }
   });
 
+  // Initial paint
   render();
-})();</script>
+})();
+</script>
 </body>
 </html>
