@@ -53,7 +53,8 @@
     .btn.primary{background:var(--bg2); color:#fff; border-color:transparent}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:6px 10px}
-    .input{border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:10px 12px; width:100%; color:var(--text); transition: box-shadow .15s ease, border-color .15s ease}
+    .input{border:1px solid var(--border);background:var(--bg2);border-radius:12px;padding:10px 12px; width:100%; color:var(--text); transition: box-shadow .15s ease, border-color .15s ease; caret-color: var(--text);}
+    .input::placeholder{color:color-mix(in oklab, var(--muted) 75%, transparent)}
     .input:focus{outline:none; border-color:color-mix(in oklab, var(--ring) 60%, var(--border)); box-shadow:0 0 0 3px color-mix(in oklab, var(--ring) 20%, transparent)}
     .toolbar{gap:10px}
     .select{appearance:none}
@@ -66,11 +67,11 @@
     .tile.reveal{animation:tileIn .5s cubic-bezier(.2,.8,.2,1) forwards; animation-delay: calc(var(--i, 0) * 20ms)}
     .thumb{
       width:100%;height:0;padding-bottom:75%;display:block;overflow:hidden;
-      position:relative; /* constrain absolutely-positioned img to the thumb box */
+      position:relative;
     }
     .thumb>img{
       width:100%;height:100%;
-      object-fit:contain;             /* << contain so art stays inside the box */
+      object-fit:contain;
       display:block;position:absolute;inset:0;
       transform:scale(1.0); transition:transform .28s ease; will-change: transform;
       background:transparent;
@@ -84,7 +85,6 @@
     .tile:hover .actions{opacity:1; transform:translateY(0)}
     .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;padding:2vh 2vw;z-index:60}
     .lightbox.open{display:flex;animation:fadeIn .18s ease}
-    /* fixed-size stage for consistent full-view size */
     .lightbox-inner{
       position:relative;
       width:min(1200px, 90vw);
@@ -95,7 +95,7 @@
       width:100%;height:100%;
       object-fit:contain;
       border-radius:16px;
-      background:transparent;          /* << keep PNG transparency */
+      background:transparent;
       box-shadow:0 20px 60px rgba(0,0,0,.4);
     }
     .lb-top{
@@ -146,16 +146,28 @@
       </div>
       <div class="row grow toolbar">
         <div class="row grow" style="position:relative">
-          <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6"></i>
-          <input id="search" class="input" style="padding-left:36px" placeholder="Search by filename…">
-          <button id="clearSearch" class="icon-btn" title="Clear"><i data-lucide="x"></i></button>
+          <i data-lucide="search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.6;pointer-events:none"></i>
+          <input
+            id="search"
+            class="input"
+            style="padding-left:36px"
+            type="search"
+            inputmode="search"
+            autocomplete="off"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            enterkeyhint="search"
+            aria-label="Search by filename"
+            placeholder="Search by filename…">
+          <button id="clearSearch" class="icon-btn hidden" type="button" title="Clear"><i data-lucide="x"></i></button>
         </div>
         <div class="chip">
           <i data-lucide="sliders-horizontal"></i>
           <label for="density" class="muted">Density</label>
           <input id="density" class="range" type="range" min="140" max="320" step="10" value="220">
         </div>
-        <select id="sort" class="input select" style="max-width:180px">
+        <select id="sort" class="input select" style="max-width:180px" aria-label="Sort">
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
           <option value="name-asc">Name A→Z</option>
@@ -163,27 +175,27 @@
           <option value="size">Size (large first)</option>
         </select>
         <div class="row">
-          <button id="gridBtn" class="btn"><i data-lucide="layout-grid"></i> Grid</button>
-          <button id="listBtn" class="btn"><i data-lucide="rows"></i> List</button>
+          <button id="gridBtn" class="btn" type="button"><i data-lucide="layout-grid"></i> Grid</button>
+          <button id="listBtn" class="btn" type="button"><i data-lucide="rows"></i> List</button>
         </div>
         <div class="spacer"></div>
         <input id="fileInput" class="hidden" type="file" accept="image/*" multiple>
-        <button id="uploadBtn" class="btn primary"><i data-lucide="upload"></i> Upload images</button>
-        <button id="zipBtn" class="btn" disabled><i data-lucide="archive"></i> Export ZIP</button>
-        <button id="clearBtn" class="btn">Clear all</button>
+        <button id="uploadBtn" class="btn primary" type="button"><i data-lucide="upload"></i> Upload images</button>
+        <button id="zipBtn" class="btn" type="button" disabled><i data-lucide="archive"></i> Export ZIP</button>
+        <button id="clearBtn" class="btn" type="button">Clear all</button>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <div id="drop" class="drop">
+    <div id="drop" class="drop" role="button" aria-label="Dropzone">
       <div><i data-lucide="upload"></i></div>
       <div style="font-weight:600;margin-top:6px">Drag & drop images here</div>
       <div class="muted">or click to browse your files</div>
       <div class="muted" style="margin-top:8px">Hint: press <span class="kbd">A</span>/<span class="kbd">D</span> to switch between images</div>
     </div>
 
-    <section id="content"></section>
+    <section id="content" aria-live="polite"></section>
 
     <div class="note"><p style="color: rgba(255, 255, 255, 0.678);">Hey, this runs entirely in your browser. Images are kept locally, no worries :3</p></div>
   </main>
@@ -232,7 +244,8 @@
     tile: 220,
     view: "grid",
     viewer: { open:false, index:0 },
-    isZipping: false
+    isZipping: false,
+    seq: 0 // monotonically increasing insert order
   };
 
   const content = $("#content");
@@ -259,10 +272,18 @@
 
   document.addEventListener('DOMContentLoaded', ()=> {
     if (window.lucide?.createIcons) lucide.createIcons();
+    syncSearchUI();
   });
 
+  function syncSearchUI(){
+    // keep the visible input in sync with state and show/hide the clear button
+    if (search.value !== state.query) search.value = state.query;
+    clearSearch.classList.toggle("hidden", state.query.length === 0);
+    // keep the sort select in sync, too (in case we change it programmatically)
+    if (sortSel.value !== state.sortBy) sortSel.value = state.sortBy;
+  }
+
   function addFiles(fileList){
-    const now = Date.now();
     const images = Array.from(fileList).filter(f => f.type.startsWith("image/"));
     if (!images.length) return;
     const existingKey = new Set(state.items.map(p => p.name+"-"+p.size));
@@ -270,20 +291,30 @@
       const key = f.name+"-"+f.size;
       if (existingKey.has(key)) continue;
       const src = URL.createObjectURL(f);
-      state.items.push({ id: now+"-"+Math.random().toString(36).slice(2), name:f.name, size:f.size, type:f.type, addedAt: now, src });
+      state.seq += 1; // ensure strict ordering even within the same millisecond
+      state.items.push({
+        id: Date.now()+"-"+Math.random().toString(36).slice(2),
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        addedAt: Date.now(),
+        seq: state.seq,
+        src
+      });
     }
     render();
   }
+
   function getFiltered(){
     const q = state.query.trim().toLowerCase();
     let res = q ? state.items.filter(it => it.name.toLowerCase().includes(q)) : state.items.slice();
     switch(state.sortBy){
       case "name-asc": res.sort((a,b)=>a.name.localeCompare(b.name)); break;
       case "name-desc": res.sort((a,b)=>b.name.localeCompare(a.name)); break;
-      case "size": res.sort((a,b)=>b.size - a.size); break;
-      case "oldest": res.sort((a,b)=>a.addedAt - b.addedAt); break;
+      case "size": res.sort((a,b)=>b.size - a.size || a.name.localeCompare(b.name)); break;
+      case "oldest": res.sort((a,b)=> (b.seq - a.seq) || a.name.localeCompare(b.name)); break;
       case "newest":
-      default: res.sort((a,b)=>b.addedAt - a.addedAt);
+      default: res.sort((a,b)=> (a.seq - b.seq) || a.name.localeCompare(b.name));
     }
     return res;
   }
@@ -302,6 +333,9 @@
     zipBtn.disabled = filtered.length === 0 || state.isZipping;
     clearBtn.disabled = state.items.length === 0;
     drop.classList.toggle("hidden", state.items.length !== 0);
+
+    // keep UI controls synced
+    syncSearchUI();
 
     content.innerHTML = "";
 
@@ -341,7 +375,7 @@
       head.className = "head";
       head.innerHTML = `<div>Name</div><div>Size</div><div>Added</div><div style="text-align:right">Actions</div>`;
       box.appendChild(head);
-      filtered.forEach((it, idx)=>{
+      getFiltered().forEach((it, idx)=>{
         const row = document.createElement("div");
         row.className = "row";
         row.style.setProperty("--i", idx);
@@ -479,8 +513,19 @@
   drop.addEventListener("drop", dropAdd);
   drop.addEventListener("click", ()=> fileInput.click());
 
-  search.addEventListener("input", debounce(()=>{ state.query = search.value; render(); }, 120));
-  clearSearch.addEventListener("click", ()=>{ search.value=""; state.query=""; render(); });
+  // SEARCH —— keep UI and state tightly in sync
+  search.addEventListener("input", debounce(()=>{
+    state.query = search.value;
+    syncSearchUI();
+    render();
+  }, 120));
+  clearSearch.addEventListener("click", ()=>{
+    state.query = "";
+    syncSearchUI();
+    render();
+    search.focus();
+  });
+
   density.addEventListener("input", debounce(()=>{ state.tile = parseInt(density.value,10)||220; render(); }, 60));
   sortSel.addEventListener("change", ()=>{ state.sortBy = sortSel.value; render(); });
   gridBtn.addEventListener("click", ()=>{ state.view="grid"; render(); });
